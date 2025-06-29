@@ -7,23 +7,20 @@ import requests
 # -------------------- Configuración inicial --------------------
 st.set_page_config(page_title="Dashboard de Ventas", layout="wide")
 
-# Usuarios válidos (con contraseñas hasheadas)
+# -------------------- Usuarios válidos (hash) --------------------
 usuarios_validos = {
     "ana": hashlib.sha256("1234".encode()).hexdigest(),
     "carlos": hashlib.sha256("abc123".encode()).hexdigest(),
     "laura": hashlib.sha256("pass2024".encode()).hexdigest(),
 }
 
-# Inicializar sesión
+# -------------------- Inicialización de sesión --------------------
 if "logueado" not in st.session_state:
     st.session_state["logueado"] = False
 if "usuario" not in st.session_state:
     st.session_state["usuario"] = ""
-if "mensaje_logout" not in st.session_state:
-    st.session_state["mensaje_logout"] = False
 
 # -------------------- Funciones --------------------
-
 def hash_clave(clave):
     return hashlib.sha256(clave.encode()).hexdigest()
 
@@ -32,63 +29,46 @@ def validar_usuario(usuario, clave):
 
 def login():
     st.title("🔐 Inicio de sesión")
-    
-    if st.session_state["mensaje_logout"]:
-        st.success("✅ Has cerrado sesión correctamente.")
-        st.session_state["mensaje_logout"] = False
-
-    usuario = st.text_input("Usuario", placeholder="Escribe tu usuario")
-    clave = st.text_input("Contraseña", type="password", placeholder="Escribe tu contraseña")
-    
-    if st.button("Ingresar"):
+    usuario = st.text_input("Usuario", key="usuario_input")
+    clave = st.text_input("Contraseña", type="password", key="clave_input")
+    if st.button("Ingresar", key="btn_login"):
         if validar_usuario(usuario, clave):
             st.session_state["logueado"] = True
             st.session_state["usuario"] = usuario
-            st.experimental_rerun()
+            st.success("✅ ¡Inicio de sesión exitoso!")
+            st.stop()
         else:
             st.error("❌ Usuario o contraseña incorrectos.")
 
-def consultar_api_agify(nombre):
-    url = f"https://api.agify.io?name={nombre}"
-    try:
-        response = requests.get(url, timeout=5)
-        if response.status_code == 200:
-            return response.json()
-        else:
-            st.error("⚠️ Error al consultar la API.")
-            return None
-    except requests.exceptions.RequestException as e:
-        st.error(f"❌ Error de conexión: {e}")
-        return None
+def cerrar_sesion():
+    st.session_state["logueado"] = False
+    st.session_state["usuario"] = ""
+    st.success("👋 Has cerrado sesión correctamente.")
+    st.stop()
 
 def dashboard():
     st.sidebar.title(f"👤 Usuario: {st.session_state['usuario']}")
-
-    def cerrar_sesion():
-        st.session_state["logueado"] = False
-        st.session_state["usuario"] = ""
-        st.session_state["mensaje_logout"] = True
-        st.experimental_rerun()
-
-    if st.sidebar.button("Cerrar sesión"):
-        cerrar_sesion()
+    st.sidebar.button("Cerrar sesión", on_click=cerrar_sesion)
 
     st.title("📊 Dashboard de Ventas - Prueba de Concepto")
 
-    # API
+    # Consulta a API
     with st.expander("🔍 Consulta de edad estimada por nombre"):
         nombre_input = st.text_input("Nombre:", key="nombre_api")
         if st.button("Consultar edad estimada"):
             if nombre_input.strip():
-                resultado = consultar_api_agify(nombre_input.strip())
-                if resultado:
-                    st.info(
-                        f"Nombre: **{resultado['name']}**\n\n"
-                        f"Edad estimada: **{resultado['age']} años**\n\n"
-                        f"Cantidad de datos: {resultado['count']}"
-                    )
+                try:
+                    response = requests.get(f"https://api.agify.io?name={nombre_input.strip()}")
+                    if response.status_code == 200:
+                        data = response.json()
+                        st.info(
+                            f"Nombre: **{data['name']}**\n\nEdad estimada: **{data['age']} años**\n\nDatos: {data['count']}")
+                    else:
+                        st.error("❌ Error al consultar la API.")
+                except Exception as e:
+                    st.error(f"❌ Error de conexión: {e}")
             else:
-                st.warning("⚠️ Por favor, ingresa un nombre.")
+                st.warning("⚠️ Por favor, escribe un nombre.")
 
     st.markdown("---")
 
@@ -112,7 +92,6 @@ def dashboard():
     # Tabla filtrable
     st.subheader("📂 Detalle de ventas por producto")
     categoria = st.selectbox("Filtrar por categoría", ["Todos", "Tecnología", "Moda", "Hogar"])
-
     np.random.seed(42)
     data = {
         "Producto": [f"Producto {i}" for i in range(1, 21)],
@@ -121,13 +100,13 @@ def dashboard():
         "Unidades Vendidas": np.random.randint(10, 100, size=20),
     }
     df = pd.DataFrame(data)
-    df_filtrado = df if categoria == "Todos" else df[df["Categoría"] == categoria]
-    st.dataframe(df_filtrado, use_container_width=True)
+    if categoria != "Todos":
+        df = df[df["Categoría"] == categoria]
+    st.dataframe(df, use_container_width=True)
 
     st.success("✔️ Dashboard funcional simulado.")
 
 # -------------------- Ejecución principal --------------------
-
 if not st.session_state["logueado"]:
     login()
 else:
