@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import requests
 
 # Simulamos usuarios válidos
 usuarios_validos = [
@@ -44,6 +45,26 @@ else:
         st.session_state.clear(), st.experimental_rerun()))
 
     st.title("📊 Dashboard de Ventas - Prueba de Concepto")
+
+    # Input y llamada a API pública
+    st.subheader("🔍 Consulta de edad estimada por nombre (API pública)")
+    nombre_input = st.text_input("Escribe un nombre para predecir la edad:")
+    if st.button("Consultar edad estimada"):
+        if nombre_input.strip() != "":
+            url = f"https://api.agify.io?name={nombre_input}"
+            try:
+                response = requests.get(url)
+                if response.status_code == 200:
+                    data = response.json()
+                    st.info(f"Nombre: **{data['name']}**\n\nEdad estimada: **{data['age']} años**\n\nCantidad de datos: {data['count']}")
+                else:
+                    st.error("Error al consultar la API.")
+            except Exception as e:
+                st.error(f"Error de conexión: {e}")
+        else:
+            st.warning("Por favor, escribe un nombre antes de consultar.")
+
+    st.markdown("---")
 
     # --- KPIs simulados
     col1, col2, col3 = st.columns(3)
