@@ -4,22 +4,23 @@ import numpy as np
 import hashlib
 import requests
 
-# -------------------- Configuración inicial --------------------
+# Configuración inicial
 st.set_page_config(page_title="Dashboard de Ventas", layout="wide")
 
-# -------------------- Usuarios válidos --------------------
+# Usuarios válidos
 usuarios_validos = {
     "ana": hashlib.sha256("1234".encode()).hexdigest(),
     "carlos": hashlib.sha256("abc123".encode()).hexdigest(),
     "laura": hashlib.sha256("pass2024".encode()).hexdigest(),
 }
 
-# -------------------- Inicializar session_state --------------------
-for key in ["logueado", "usuario", "pagina_actual"]:
-    if key not in st.session_state:
-        st.session_state[key] = False if key == "logueado" else ""
+# Estado de la sesión
+if "pagina" not in st.session_state:
+    st.session_state["pagina"] = "login"
+if "usuario" not in st.session_state:
+    st.session_state["usuario"] = ""
 
-# -------------------- Funciones --------------------
+# Funciones
 def hash_clave(clave):
     return hashlib.sha256(clave.encode()).hexdigest()
 
@@ -28,49 +29,38 @@ def validar_usuario(usuario, clave):
 
 def login():
     st.title("🔐 Inicio de sesión")
-    usuario = st.text_input("Usuario", key="usuario_input")
-    clave = st.text_input("Contraseña", type="password", key="clave_input")
+    usuario = st.text_input("Usuario")
+    clave = st.text_input("Contraseña", type="password")
     if st.button("Ingresar"):
         if validar_usuario(usuario, clave):
-            st.session_state["logueado"] = True
             st.session_state["usuario"] = usuario
-            st.session_state["pagina_actual"] = "dashboard"
-            st.experimental_rerun()
+            st.session_state["pagina"] = "dashboard"
         else:
             st.error("❌ Usuario o contraseña incorrectos.")
 
-def cerrar_sesion():
-    st.session_state["logueado"] = False
-    st.session_state["usuario"] = ""
-    st.session_state["pagina_actual"] = "login"
-    st.experimental_rerun()
-
-def consultar_api_agify(nombre):
-    try:
-        response = requests.get(f"https://api.agify.io?name={nombre.strip()}")
-        if response.status_code == 200:
-            return response.json()
-        else:
-            st.error("⚠️ Error al consultar la API.")
-            return None
-    except Exception as e:
-        st.error(f"❌ Error de conexión: {e}")
-        return None
-
 def dashboard():
     st.sidebar.title(f"👤 Usuario: {st.session_state['usuario']}")
-    st.sidebar.button("Cerrar sesión", on_click=cerrar_sesion)
+    if st.sidebar.button("Cerrar sesión"):
+        st.session_state["usuario"] = ""
+        st.session_state["pagina"] = "login"
 
     st.title("📊 Dashboard de Ventas - Prueba de Concepto")
 
+    # API Agify
     with st.expander("🔍 Consulta de edad estimada por nombre"):
         nombre_input = st.text_input("Nombre:", key="nombre_api")
         if st.button("Consultar edad estimada"):
             if nombre_input.strip():
-                data = consultar_api_agify(nombre_input)
-                if data:
-                    st.info(
-                        f"Nombre: **{data['name']}**\n\nEdad estimada: **{data['age']} años**\n\nDatos: {data['count']}")
+                try:
+                    response = requests.get(f"https://api.agify.io?name={nombre_input.strip()}")
+                    if response.status_code == 200:
+                        data = response.json()
+                        st.info(
+                            f"Nombre: **{data['name']}**\n\nEdad estimada: **{data['age']} años**\n\nDatos: {data['count']}")
+                    else:
+                        st.error("❌ Error al consultar la API.")
+                except Exception as e:
+                    st.error(f"❌ Error de conexión: {e}")
             else:
                 st.warning("⚠️ Escribe un nombre válido.")
 
@@ -84,6 +74,7 @@ def dashboard():
 
     st.markdown("---")
 
+    # Gráfico
     st.subheader("📈 Ventas mensuales")
     meses = pd.date_range("2024-01-01", periods=12, freq="M")
     ventas = np.random.randint(8000, 15000, size=12)
@@ -92,6 +83,7 @@ def dashboard():
 
     st.markdown("---")
 
+    # Tabla filtrable
     st.subheader("📂 Detalle de ventas por producto")
     categoria = st.selectbox("Filtrar por categoría", ["Todos", "Tecnología", "Moda", "Hogar"])
     np.random.seed(42)
@@ -108,10 +100,9 @@ def dashboard():
 
     st.success("✔️ Dashboard funcional simulado.")
 
-# -------------------- Ejecución principal --------------------
-
-if not st.session_state["logueado"] or st.session_state["pagina_actual"] == "login":
+# Router principal
+if st.session_state["pagina"] == "login":
     login()
-else:
+elif st.session_state["pagina"] == "dashboard":
     dashboard()
 
