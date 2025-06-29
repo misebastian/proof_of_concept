@@ -16,8 +16,9 @@ usuarios_validos = {
 
 # Inicializar sesión
 if "logueado" not in st.session_state:
-    st.session_state.logueado = False
-    st.session_state.usuario = ""
+    st.session_state["logueado"] = False
+if "usuario" not in st.session_state:
+    st.session_state["usuario"] = ""
 
 # -------------------- Funciones --------------------
 
@@ -34,8 +35,8 @@ def login():
     
     if st.button("Ingresar"):
         if validar_usuario(usuario, clave):
-            st.session_state.logueado = True
-            st.session_state.usuario = usuario
+            st.session_state["logueado"] = True
+            st.session_state["usuario"] = usuario
             st.experimental_rerun()
         else:
             st.error("❌ Usuario o contraseña incorrectos.")
@@ -54,7 +55,7 @@ def consultar_api_agify(nombre):
         return None
 
 def dashboard():
-    st.sidebar.title(f"👤 Usuario: {st.session_state.usuario}")
+    st.sidebar.title(f"👤 Usuario: {st.session_state['usuario']}")
     if st.sidebar.button("Cerrar sesión"):
         st.session_state.clear()
         st.experimental_rerun()
@@ -114,7 +115,8 @@ def dashboard():
 
 # -------------------- Ejecución principal --------------------
 
-if not st.session_state.logueado:
+if not st.session_state["logueado"]:
     login()
 else:
     dashboard()
+
