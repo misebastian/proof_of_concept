@@ -19,6 +19,8 @@ if "logueado" not in st.session_state:
     st.session_state["logueado"] = False
 if "usuario" not in st.session_state:
     st.session_state["usuario"] = ""
+if "mensaje_logout" not in st.session_state:
+    st.session_state["mensaje_logout"] = False
 
 # -------------------- Funciones --------------------
 
@@ -30,6 +32,11 @@ def validar_usuario(usuario, clave):
 
 def login():
     st.title("🔐 Inicio de sesión")
+    
+    if st.session_state["mensaje_logout"]:
+        st.success("✅ Has cerrado sesión correctamente.")
+        st.session_state["mensaje_logout"] = False
+
     usuario = st.text_input("Usuario", placeholder="Escribe tu usuario")
     clave = st.text_input("Contraseña", type="password", placeholder="Escribe tu contraseña")
     
@@ -56,9 +63,15 @@ def consultar_api_agify(nombre):
 
 def dashboard():
     st.sidebar.title(f"👤 Usuario: {st.session_state['usuario']}")
-    if st.sidebar.button("Cerrar sesión"):
-        st.session_state.clear()
+
+    def cerrar_sesion():
+        st.session_state["logueado"] = False
+        st.session_state["usuario"] = ""
+        st.session_state["mensaje_logout"] = True
         st.experimental_rerun()
+
+    if st.sidebar.button("Cerrar sesión"):
+        cerrar_sesion()
 
     st.title("📊 Dashboard de Ventas - Prueba de Concepto")
 
