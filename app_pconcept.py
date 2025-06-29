@@ -14,7 +14,7 @@ usuarios_validos = {
     "laura": hashlib.sha256("pass2024".encode()).hexdigest(),
 }
 
-# Estado de la sesión
+# Inicializar estado de sesión
 if "pagina" not in st.session_state:
     st.session_state["pagina"] = "login"
 if "usuario" not in st.session_state:
@@ -31,25 +31,26 @@ def login():
     st.title("🔐 Inicio de sesión")
     usuario = st.text_input("Usuario")
     clave = st.text_input("Contraseña", type="password")
-    if st.button("Ingresar"):
+    if st.button("Ingresar", key="btn_ingresar"):
         if validar_usuario(usuario, clave):
             st.session_state["usuario"] = usuario
             st.session_state["pagina"] = "dashboard"
+            st.experimental_rerun()
         else:
             st.error("❌ Usuario o contraseña incorrectos.")
 
 def dashboard():
     st.sidebar.title(f"👤 Usuario: {st.session_state['usuario']}")
-    if st.sidebar.button("Cerrar sesión"):
+    if st.sidebar.button("Cerrar sesión", key="btn_cerrar"):
         st.session_state["usuario"] = ""
         st.session_state["pagina"] = "login"
+        st.experimental_rerun()
 
     st.title("📊 Dashboard de Ventas - Prueba de Concepto")
 
-    # API Agify
     with st.expander("🔍 Consulta de edad estimada por nombre"):
         nombre_input = st.text_input("Nombre:", key="nombre_api")
-        if st.button("Consultar edad estimada"):
+        if st.button("Consultar edad estimada", key="btn_api"):
             if nombre_input.strip():
                 try:
                     response = requests.get(f"https://api.agify.io?name={nombre_input.strip()}")
@@ -100,7 +101,7 @@ def dashboard():
 
     st.success("✔️ Dashboard funcional simulado.")
 
-# Router principal
+# Ejecución principal
 if st.session_state["pagina"] == "login":
     login()
 elif st.session_state["pagina"] == "dashboard":
